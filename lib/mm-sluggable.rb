@@ -16,7 +16,8 @@ module MongoMapper
             :method       => :parameterize,
             :scope        => nil,
             :max_length   => 256,
-            :callback     => [:before_validation, {:on => :create}]
+            :callback     => [:before_validation, {:on => :create}],
+            :force        => false
           }.merge(options)
 
           key slug_options[:key], String, :index => slug_options[:index]
@@ -31,7 +32,8 @@ module MongoMapper
       
       def set_slug
         options = self.class.slug_options
-        return unless self.send(options[:key]).blank?
+        need_set_slug = self.send(options[:key]).blank? || (options[:force] && self.send(:"#{options[:to_slug]}_changed?"))
+        return unless need_set_slug
 
         to_slug = self[options[:to_slug]]
         return if to_slug.blank?
@@ -52,6 +54,10 @@ module MongoMapper
         self.send(:"#{options[:key]}=", the_slug)
       end
       
+      def to_param	
+        options = self.class.slug_options
+        ( self.send(options[:key]) || self.id ).to_s	
+      end
     end
   end
 end
